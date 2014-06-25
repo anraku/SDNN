@@ -26,16 +26,28 @@ public class CodePattern {
 	}
 	
 	//コードパターンを別のコードパターンにコピーする
-	public void copyCodePattern(CodePattern cp){
-		this.code_pattern = cp.code_pattern;
+	public void copyCodePattern(int[] cp){
+		this.code_pattern = cp;
 	}
 	
 	/*任意の場所に-1,1,0のいずれかの3値を代入する*/
 	public boolean setCode(int n,int code){
-		if(n == 0||n == -1||n == 1)
+		if(!(code == 1 || code == -1))
 			return false;
 		this.code_pattern[n] = code;
 		return true;
+	}
+	
+	public void changeCode(int n){
+		this.code_pattern[n] *= -1;
+	}
+	
+	public int[] getCodePattern(){
+		return code_pattern;
+	}
+	
+	public int getCode(int n){
+		return code_pattern[n];
 	}
 }
 
