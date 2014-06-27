@@ -10,7 +10,9 @@ public class MainApp extends JFrame{
 	//初期設定
 		public MainApp(){
 			
-			sdnn = new SDNN(360);
+			/*最初の引数はアナログ入力値の分解能を浮動小数点に
+			 *その後は各層のコードパターンの数を任意の数だけ引数に入れる*/
+			sdnn = new SDNN(1.0,10,10,10);
 			
 			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			setTitle("SDNNテスト");
@@ -23,6 +25,5 @@ public class MainApp extends JFrame{
 		public static void main(String[] args){
 
 			MainApp app = new MainApp();
-			
 		}
 }
