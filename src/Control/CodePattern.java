@@ -3,45 +3,31 @@ package Control;
 public class CodePattern {
 	
 	private int code_pattern[] = null;  //1,-1,0の3値パターン
-	private final int CODE = 200;        //コードパターンの次元数
 	private int length = 0;
-
 	
 	/*引数なしなら200次元のコードパターンを作成*/
-	public CodePattern(){
-		if(!createCodePattern(CODE)){
-			return;
-		}
-	}
-	
-	/*引数ありならn次元のコードパターンを作成*/
-	/*public CodePattern(int n){
-		if(!createCodePattern(n)){
-			return;
-		}
-	}*/
-	
-	/*コードパターンの初期化時に使われる
-	 * n次元のコードパターンを作成する*/
-	public boolean createCodePattern(int n){
+	public CodePattern(int n){
 		try{
 			code_pattern = new int [n];
 		}catch(NullPointerException e){
 			System.out.println(e.getMessage());
-			return false;
 		}
 		length = n;
-		return true;
 	}
 	
-	//コードパターンを別のコードパターンにコピーする//int配列ver
+	//コードパターンを別のコードパターンにコピーする          //int配列 ver
 	public void copyCodePattern(int[] cp){
-		this.code_pattern = cp;
+		for(int i=0; i<code_pattern.length; i++){
+			this.code_pattern[i] = cp[i];
+		}
 	}
 	
-	//コードパターンを別のコードパターンにコピーする//int配列ver
+	//コードパターンを別のコードパターンにコピーする          //CodePattern ver
 	public void copyCodePattern(CodePattern cp){
-		this.code_pattern = cp.getCodePattern();
+		for(int i=0; i<code_pattern.length; i++){
+			this.code_pattern[i] = cp.getCode(i);
+		}
+		
 	}
 	
 	/*任意の場所に-1,1,0のいずれかの3値を代入する*/
@@ -59,7 +45,9 @@ public class CodePattern {
 	public int[] getCodePattern(){
 		return code_pattern;
 	}
-	
+	public void setCodePattern(CodePattern cp){
+		this.code_pattern = cp.getCodePattern();
+	}
 	public int getCode(int n){
 		return code_pattern[n];
 	}
