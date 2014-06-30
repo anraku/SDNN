@@ -32,8 +32,6 @@ public class CodePattern {
 	
 	/*任意の場所に-1,1,0のいずれかの3値を代入する*/
 	public boolean setCode(int n,int code){
-		if(!(code == 1 || code == -1))
-			return false;
 		this.code_pattern[n] = code;
 		return true;
 	}

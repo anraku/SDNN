@@ -5,27 +5,12 @@ import java.util.Random;
 
 
 public class Elements {
-
+	private static final int CODE = 5;
 	private CodePattern[] elements = null;
 	private int length = 0;
-	private final int CODE = 5;
+	private double resolution = 1.0;
 
-
-	public Elements(int n){
-		if(!(elementsInit(n))){
-			System.out.println("error elementsInit");
-			return;
-		}	
-	}
-	
-	public Elements(){
-		if(!(elementsInit(CODE))){
-			System.out.println("error elementsInit");
-			return;
-		}	
-	}
-	
-	public boolean elementsInit(int n){
+	public Elements(int n,double res){
 		try{
 			elements = new CodePattern [n];
 			for(int i=0; i<n; i++){
@@ -33,10 +18,21 @@ public class Elements {
 			}
 		}catch(NullPointerException e){
 			System.out.println(e.getMessage());
-			return false;
 		}
 		length = n;
-		return true;
+		resolution = res;
+	}
+
+	public Elements(int n){
+		try{
+			elements = new CodePattern [n];
+			for(int i=0; i<n; i++){
+				elements[i] = new CodePattern(CODE);
+			}
+		}catch(NullPointerException e){
+			System.out.println(e.getMessage());
+		}
+		length = n;
 	}
 
 	public boolean createElements(){
@@ -76,8 +72,15 @@ public class Elements {
 	public CodePattern getCodePattern(int index){
 		return elements[index];
 	}
+	public void setCodePattern(int index,CodePattern cp){
+		elements[index] = cp;
+	}
 	public CodePattern[] getElements(){
-		return elements;
+		Elements tmp = new Elements(elements.length);
+		for(int i=0; i<tmp.length; i++){
+			tmp.setCodePattern(i,elements[i]);
+		}
+		return tmp.elements;
 	}
 
 	public void setElements(CodePattern[] cp){
@@ -86,5 +89,12 @@ public class Elements {
 
 	public int getLength(){
 		return length;
+	}
+
+	public double getResolution(){
+		return resolution;
+	}
+	public static int getDimension(){
+		return CODE;
 	}
 }
