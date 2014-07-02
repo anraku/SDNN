@@ -5,7 +5,7 @@ import java.util.Random;
 
 
 public class Elements {
-	private static final int CODE = 5;			//コードパターンの次元数
+	private static final int CODE = 200;			//コードパターンの次元数
 	private CodePattern[] elements = null;		//コードパターンを管理する
 	private int length = 0;						//elements.length
 	private double resolution = 1.0;			//分解能

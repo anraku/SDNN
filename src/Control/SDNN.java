@@ -17,8 +17,9 @@ public class SDNN {
 	private Elements shuffledLayer[]     = null; //入力層をシャフルしたもの
 	private int selectedIndex[]          = null; //入力値に対応するのコードパターンを管理
 	private int middleLayer[]            = null; //中間層
-	private int outputLayer[]            = null; //出力層
-	private int weight[]                 = null; //中間素子から出力層への結合荷重
+	private double outputLayer[]            = null; //出力層
+	private double weight[]                 = null; //中間素子から出力層への結合荷重
+	private double h[]						 = null; //各出力素子のしきい値
 	private final int SUMOUT             = 3;	 //出力値を求めるための出力素子の数
 	
 	/*入力層、中間層、出力層全体の初期化を行う*/
@@ -42,7 +43,10 @@ public class SDNN {
 		/*中間層の初期化を行う*/
 		middleLayerInit();
 		/*weightの初期化*/
-		weight = new int [inputLayer.length*(inputLayer.length-1)*SUMOUT];
+		weight = new double [middleLayer.length*SUMOUT];
+		h = new double [SUMOUT];
+		/*出力層の初期化を行う*/
+		outputLayerInit();
 	}
 	
 	/*入力層の初期化を行う*/
@@ -107,31 +111,7 @@ public class SDNN {
 			System.out.println(e.getMessage());
 			return false;
 		}
-		
-		/*入力層のコードパターンをシャフルした修飾パターンで不感化させる
-		不感化させたコードパターンはmiddleLayerに格納していく*/
-		for(int i=0; i<inputLayer.length; i++){
-
-			for(int j=0; j<inputLayer.length; j++){
-				/*修飾される方のコードパターン*/
-				CodePattern outputPattern = 
-					inputLayer[i].getCodePattern(j);
-				
-				for(int k=0; k<inputLayer.length; k++){
-					if(i == k){
-						continue;
-					}
-					/*修飾パターン*/
-					CodePattern modPattern = 
-						shuffledLayer[k].getCodePattern(j);
-					/*コードパターンを不感化した結果を返す*/
-					CodePattern desPattern = 
-						neuronDesensitise(outputPattern,modPattern);
-					middleLayer.setCodePattern(i*inputLayer.length+j,desPattern);
-				}	
-			}
-		}
-
+		return true;
 	}
 
 	/*入力値を受け取り、中間層を生成及び出力層から出力値を求める*/
@@ -143,7 +123,6 @@ public class SDNN {
 		if(selectedIndex == null){
 			return;
 		}
-<<<<<<< HEAD
 		/*選択したコードパターンをシャフルした修飾パターンで不感化させる
 		不感化させたコードパターンはmiddleLayerに格納していく*/
 		for(int i=0; i<inputLayer.length; i++){
@@ -170,9 +149,6 @@ public class SDNN {
 		for(int i=0; i<tmp.length; i++){
 			middleLayer[i] = Integer.parseInt(tmp[i]);
 		}
-=======
-		
->>>>>>> origin/master
 	}
 
 	/*入力値に対応するコードパターンを各素子群から選ぶ*/
@@ -221,20 +197,34 @@ public class SDNN {
 			return;
 		}
 
-		outputLayer = new int [SUMOUT];
+		outputLayer = new double [SUMOUT];
 		outputLayer = calcOutputLayer(middleLayer,weight);
 	}
 
 	/*出力層を計算する*/
-	public int[] calcOutputLayer(int x[],int w[]){
-		int out[] = new int [SUMOUT];
+	public double[] calcOutputLayer(int x[],double w[]){
+		double out[] = new double [SUMOUT];
+		/*各中間素子と結合荷重により出力素子を計算する*/
+		for(int i=0; i<out.length; i++){
+			for(int j=0; j<middleLayer.length; j++){
+				out[i] += x[j] + w[i*middleLayer.length+j];
+			}
+			out[i] -= h[i];  //しきい値分を引く
+		}
 		return out;
 	}
 
-	/*出力層から最終的な出力値を求める*/
-	public int resultOutput(){
-		int y = 0;
-		return y;
+	/*各出力素子から出力値の合計を求める*/
+	public int resultOutput(double out[]){
+		int result = 0;
+		for(int i=0; i<out.length; i++){
+			if(out[i] > 0){
+				result += 1;
+			}else{
+				//なにもしない
+			}
+		}
+		return result;
 	}
 
 	/*テスト出力用メソッド*/
@@ -282,5 +272,10 @@ public class SDNN {
 		for(int c:middleLayer){
 			System.out.print(c+" ");
 		}
+		System.out.println("");
+
+		/*最終的な出力値*/
+		System.out.println("出力値");
+		System.out.println(resultOutput(outputLayer));
 	}
 }
