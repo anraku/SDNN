@@ -1,8 +1,10 @@
 package Control;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Arrays;
+
 
 
 
@@ -11,11 +13,13 @@ import Control.CodePattern;
 
 public class SDNN {
 	
-	private Elements inputLayer[] = null;       //入力層
-	private Elements shuffledLayer[] = null;    //入力層をシャフルしたもの
-	private int[] selectedIndex = null; 		//入力層のコードパターンの要素を管理
-	private Elements middleLayer = null;        //中間層
-	private Elements outputLayer = null;        //出力層
+	private Elements inputLayer[]        = null; //入力層
+	private Elements shuffledLayer[]     = null; //入力層をシャフルしたもの
+	private int selectedIndex[]          = null; //入力値に対応するのコードパターンを管理
+	private int middleLayer[]            = null; //中間層
+	private int outputLayer[]            = null; //出力層
+	private int weight[]                 = null; //中間素子から出力層への結合荷重
+	private final int SUMOUT             = 3;	 //出力値を求めるための出力素子の数
 	
 	/*入力層、中間層、出力層全体の初期化を行う*/
 	public SDNN(int[] n,double[] res){    //各素子群毎のコードパターンの数
@@ -33,9 +37,12 @@ public class SDNN {
 		for(int i=0; i<n.length; i++){
 			inputLayerInit(i,n[i]);
 		}
-
+		/*入力層をシャフルした結果を求める*/
 		shuffleInputLayer();
+		/*中間層の初期化を行う*/
 		middleLayerInit();
+		/*weightの初期化*/
+		weight = new int [inputLayer.length*(inputLayer.length-1)*SUMOUT];
 	}
 	
 	/*入力層の初期化を行う*/
@@ -84,12 +91,16 @@ public class SDNN {
 
 	/*中間層の初期化を行う*/
 	public boolean middleLayerInit(){
+		/*入力層が生成されてなければ中間層の初期化は不可*/
 		if(inputLayer == null){
 			return false;
 		}
+		/*すでに中間層が作られていれば初期化しなおす*/
+		if(middleLayer != null){
+			middleLayer = null;
+		}
 		try{
-			int middleLayerSize = inputLayer.length*inputLayer.length;
-			middleLayer = new Elements (middleLayerSize);
+			middleLayer = new int [inputLayer.length*(inputLayer.length-1)*Elements.getDimension()];
 			System.out.println("middleLayerInit complete");
 		}catch(NullPointerException e){
 			System.out.println("middleLayerInit error");
@@ -103,6 +114,7 @@ public class SDNN {
 	public void input(double... input){
 		/*入力値からそれに対応する各層のコードパターンを選択*/
 		selectedIndex = selectedInputIndex(input);
+		List<String> list = new ArrayList<String>();
 		
 		if(selectedIndex == null){
 			return;
@@ -124,10 +136,15 @@ public class SDNN {
 				/*コードパターンを不感化した結果を返す*/
 				CodePattern desPattern = 
 					neuronDesensitise(outputPattern,modPattern);
-				middleLayer.setCodePattern(i*inputLayer.length+j,desPattern);
+
+				/*middleLayerにコードパターンをlistで追加していく。*/
+				list.addAll(middleLayerAdd(desPattern));
 			}
 		}
-
+		String tmp[] = list.toArray(new String[list.size()]);
+		for(int i=0; i<tmp.length; i++){
+			middleLayer[i] = Integer.parseInt(tmp[i]);
+		}
 	}
 
 	/*入力値に対応するコードパターンを各素子群から選ぶ*/
@@ -138,6 +155,7 @@ public class SDNN {
 		if(ns.length != inputLayer.length){
 			return null;
 		}
+		/*各入力層の入力値に対応する配列の要素の値をselectedに格納する*/
 		int selected[] = new int [inputLayer.length];
 		for(int i=0; i<ns.length; i++){
 			int index = (int)(ns[i] / inputLayer[i].getResolution());  //入力値に対するコードパターン
@@ -146,6 +164,7 @@ public class SDNN {
 		return selected;
 	}
 
+	/*コードパターン同士を不感化させるメソッド*/
 	public CodePattern neuronDesensitise(CodePattern out,CodePattern mod){
 		CodePattern result = new CodePattern (out.getLength());
 		/*各素子について不感化していく*/
@@ -158,6 +177,38 @@ public class SDNN {
 		}
 		return result;
 	}
+
+	/*middleLayerに不感化したコードパターンを追加していく*/
+	public List<String> middleLayerAdd(CodePattern cp){
+		List<String> list = new ArrayList<String>();
+		for(int i=0; i<cp.getLength(); i++){
+			list.add(String.valueOf(cp.getCode(i)));
+		}
+		return list;
+	}
+
+	/*中間層と結合荷重の値を元に出力層を生成*/
+	public void outputLayerInit(){
+		if(middleLayer == null){
+			return;
+		}
+
+		outputLayer = new int [SUMOUT];
+		outputLayer = calcOutputLayer(middleLayer,weight);
+	}
+
+	/*出力層を計算する*/
+	public int[] calcOutputLayer(int x[],int w[]){
+		int out[] = new int [SUMOUT];
+		return out;
+	}
+
+	/*出力層から最終的な出力値を求める*/
+	public int resultOutput(){
+		int y = 0;
+		return y;
+	}
+
 	/*テスト出力用メソッド*/
 	public void test_dump(){
 		/*入力層の初期化に失敗した時は終了*/
@@ -167,7 +218,7 @@ public class SDNN {
 		}
 		
 		/*入力層の各素子群の値を出力*/
-		System.out.println("入力層出力");
+		System.out.println("入力層出力            シャフルした結果");
 		for(int i=0; i<inputLayer.length; i++){
 			System.out.println((i+1)+"層目:");
 			for(int j=0; j<inputLayer[i].getLength(); j++){
@@ -184,7 +235,7 @@ public class SDNN {
 			}
 		}
 
-		/*入力層をシャフルした結果を出力*/
+		/*入力層をシャフルした結果を出力
 		System.out.println("シャフルした結果を出力");
 		for(int i=0; i<shuffledLayer.length; i++){
 			System.out.println((i+1)+"層目:");
@@ -200,13 +251,8 @@ public class SDNN {
 
 		/*中間層を出力*/
 		System.out.println("中間層を出力");
-		for(int i=0; i<middleLayer.getLength(); i++){
-				System.out.println((i+1)+"番目:");
-				System.out.print("    ");
-				for(int j=0;j<middleLayer.getCodePattern(i).getLength(); j++){
-					System.out.print(" "+middleLayer.getCodePattern(i).getCode(j));
-				}
-				System.out.println("");
+		for(int c:middleLayer){
+			System.out.print(c+" ");
 		}
 	}
 }

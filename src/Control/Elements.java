@@ -5,11 +5,12 @@ import java.util.Random;
 
 
 public class Elements {
-	private static final int CODE = 5;
-	private CodePattern[] elements = null;
-	private int length = 0;
-	private double resolution = 1.0;
+	private static final int CODE = 5;			//コードパターンの次元数
+	private CodePattern[] elements = null;		//コードパターンを管理する
+	private int length = 0;						//elements.length
+	private double resolution = 1.0;			//分解能
 
+	/**/
 	public Elements(int n,double res){
 		try{
 			elements = new CodePattern [n];
