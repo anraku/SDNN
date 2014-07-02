@@ -107,7 +107,31 @@ public class SDNN {
 			System.out.println(e.getMessage());
 			return false;
 		}
-		return true;
+		
+		/*入力層のコードパターンをシャフルした修飾パターンで不感化させる
+		不感化させたコードパターンはmiddleLayerに格納していく*/
+		for(int i=0; i<inputLayer.length; i++){
+
+			for(int j=0; j<inputLayer.length; j++){
+				/*修飾される方のコードパターン*/
+				CodePattern outputPattern = 
+					inputLayer[i].getCodePattern(j);
+				
+				for(int k=0; k<inputLayer.length; k++){
+					if(i == k){
+						continue;
+					}
+					/*修飾パターン*/
+					CodePattern modPattern = 
+						shuffledLayer[k].getCodePattern(j);
+					/*コードパターンを不感化した結果を返す*/
+					CodePattern desPattern = 
+						neuronDesensitise(outputPattern,modPattern);
+					middleLayer.setCodePattern(i*inputLayer.length+j,desPattern);
+				}	
+			}
+		}
+
 	}
 
 	/*入力値を受け取り、中間層を生成及び出力層から出力値を求める*/
@@ -119,6 +143,7 @@ public class SDNN {
 		if(selectedIndex == null){
 			return;
 		}
+<<<<<<< HEAD
 		/*選択したコードパターンをシャフルした修飾パターンで不感化させる
 		不感化させたコードパターンはmiddleLayerに格納していく*/
 		for(int i=0; i<inputLayer.length; i++){
@@ -145,6 +170,9 @@ public class SDNN {
 		for(int i=0; i<tmp.length; i++){
 			middleLayer[i] = Integer.parseInt(tmp[i]);
 		}
+=======
+		
+>>>>>>> origin/master
 	}
 
 	/*入力値に対応するコードパターンを各素子群から選ぶ*/
