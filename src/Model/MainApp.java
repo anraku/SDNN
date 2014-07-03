@@ -18,7 +18,10 @@ public class MainApp extends JFrame{
 		double res[]   = {1.0, 1.0, 1.0};
 		
 		sdnn = new SDNN(elements, res);
-		sdnn.input(1.0, 2.0, 3.0);
+		final int COUNT = 10;
+		for(int i=0; i<COUNT; i++){
+			sdnn.input(1.0, 2.0, 3.0);
+		}
 		sdnn.test_dump();
 		
 	}

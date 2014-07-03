@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Arrays;
-
-
-
+import java.util.Comparator;
+import java.lang.Math;
 
 import Control.Elements;
 import Control.CodePattern;
@@ -17,11 +16,7 @@ public class SDNN {
 	private Elements shuffledLayer[]     = null; //入力層をシャフルしたもの
 	private int selectedIndex[]          = null; //入力値に対応するのコードパターンを管理
 	private int middleLayer[]            = null; //中間層
-	private double outputLayer[]            = null; //出力層
-	private double weight[]                 = null; //中間素子から出力層への結合荷重
-	private double h[]						 = null; //各出力素子のしきい値
-	private final int SUMOUT             = 3;	 //出力値を求めるための出力素子の数
-	
+
 	/*入力層、中間層、出力層全体の初期化を行う*/
 	public SDNN(int[] n,double[] res){    //各素子群毎のコードパターンの数
 		/*入力層の初期化を行う*/
@@ -114,7 +109,7 @@ public class SDNN {
 		return true;
 	}
 
-	/*入力値を受け取り、中間層を生成及び出力層から出力値を求める*/
+	/*入力値を受け取り、中間層を生成及び出力層から出力値を求め,学習値の更新まで行う*/
 	public void input(double... input){
 		/*入力値からそれに対応する各層のコードパターンを選択*/
 		selectedIndex = selectedInputIndex(input);
@@ -149,6 +144,13 @@ public class SDNN {
 		for(int i=0; i<tmp.length; i++){
 			middleLayer[i] = Integer.parseInt(tmp[i]);
 		}
+		/*各出力素子の値を計算*/
+		outputLayer = calcOutputLayer(middleLayer,weight);
+		/*各出力素子から出力値を算出*/
+		int result = resultOutput(outputLayer);
+		/*出力結果と目標値を元に学習の更新を行う*/
+		renewal(result);
+
 	}
 
 	/*入力値に対応するコードパターンを各素子群から選ぶ*/
@@ -202,6 +204,9 @@ public class SDNN {
 	}
 
 	/*出力層を計算する*/
+	private double outputLayer[]        = null; //出力層
+	private double weight[]             = null; //中間素子から出力層への結合荷重
+	private double h[]					= null; //各出力素子のしきい値
 	public double[] calcOutputLayer(int x[],double w[]){
 		double out[] = new double [SUMOUT];
 		/*各中間素子と結合荷重により出力素子を計算する*/
@@ -227,6 +232,73 @@ public class SDNN {
 		return result;
 	}
 
+	/*学習についてのパラメータの修正を行う*/
+	private final int SUMOUT    = 3;	 //出力値を求めるための出力素子の数ｘ
+	private final double c 		= 0.3;   //学習係数
+	private int target			= 2;	 //学習での目標値
+	public void renewal(int res){
+		int count = 0;		//修正すべき出力素子の個数まで
+		double[] outTmp = new double [outputLayer.length];
+		for(int i=0; i<outTmp.length; i++){
+			outTmp[i] = outputLayer[i];
+		}
+		/*修正すべき出力素子を順に並べるようにする*/
+		if(res < target){
+			Arrays.sort(outTmp,outTmp.length-1,0);
+			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
+			for(int i=0; i<outputLayer.length; i++){
+				if(outTmp[i] > 1){
+					continue;
+				}
+				/*修正すべきoutTmpの出力素子を検索*/
+				for(int j=0; j<outputLayer.length; j++){
+					if(outputLayer[j] == outTmp[i]){
+						/*重みweightについて修正*/
+						for(int k=0; k<middleLayer.length; k++){
+							weight[j*middleLayer.length+k] += 
+								c*(Math.abs(res-target))*middleLayer[k];
+						}
+						/*各出力素子のしきい値について修正*/
+						h[j] += -c*Math.abs(res-target);
+						count++;
+					}
+				}
+				if(count >= Math.abs(res-target)){
+					break;
+				}
+			}
+		}else{
+			Arrays.sort(outTmp);
+			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
+			for(int i=0; i<outputLayer.length; i++){
+				if(outTmp[i] < 1){
+					continue;
+				}
+				/*修正すべきoutTmpの出力素子を検索*/
+				for(int j=0; j<outputLayer.length; j++){
+					if(outputLayer[j] == outTmp[i]){
+						/*重みweightについて修正*/
+						for(int k=0; k<middleLayer.length; k++){
+							weight[j*middleLayer.length+k] += 
+								c*(Math.abs(res-target))*middleLayer[k];
+						}
+						/*各出力素子のしきい値について修正*/
+						h[j] += -c*Math.abs(res-target);
+						count++;
+					}
+				}
+				if(count >= Math.abs(res-target)){
+					break;
+				}
+			}
+
+		}
+		
+	}
+	
+	public void setTarget(int t){
+		target = t;
+	}
 	/*テスト出力用メソッド*/
 	public void test_dump(){
 		/*入力層の初期化に失敗した時は終了*/
@@ -253,20 +325,6 @@ public class SDNN {
 			}
 		}
 
-		/*入力層をシャフルした結果を出力
-		System.out.println("シャフルした結果を出力");
-		for(int i=0; i<shuffledLayer.length; i++){
-			System.out.println((i+1)+"層目:");
-			for(int j=0; j<shuffledLayer[i].getLength(); j++){
-				System.out.println("    "+(j+1)+"番目:");
-				System.out.print("        ");
-				for(int k=0;k<shuffledLayer[i].getCodePattern(j).getLength(); k++){
-					System.out.print(" "+shuffledLayer[i].getCodePattern(j).getCode(k));
-				}
-				System.out.println("");
-			}
-		}
-
 		/*中間層を出力*/
 		System.out.println("中間層を出力");
 		for(int c:middleLayer){
@@ -274,8 +332,22 @@ public class SDNN {
 		}
 		System.out.println("");
 
-		/*最終的な出力値*/
-		System.out.println("出力値");
-		System.out.println(resultOutput(outputLayer));
+		/*最終的な出力値と目標値*/
+		System.out.println("出力値  目標値");
+		System.out.println(resultOutput(outputLayer)+" "+target);
+		/*重みとしきい値を表示*/
+		System.out.println("重み");
+		for(int i=0; i<outputLayer.length; i++){
+			for(int j=0; j<middleLayer.length; j++){
+				System.out.print(weight[i*outputLayer.length+j]+" ");
+			}
+			System.out.println("");
+		}
+		System.out.println("しきい値");
+		for(int i=0; i<h.length; i++){
+			System.out.print(h[i]+" ");
+		}
+		System.out.println("");
+
 	}
 }
