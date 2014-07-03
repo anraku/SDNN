@@ -14,13 +14,14 @@ public class MainApp extends JFrame{
 		setTitle("SDNNテスト");
 		/*最初の引数はアナログ入力値の分解能を浮動小数点に
 		 *その後は各層のコードパターンの数を任意の数だけ引数に入れる*/
-		int elements[] = {3, 3, 3};
-		double res[]   = {1.0, 1.0, 1.0};
+		int elements[] = {100, 100, 100};
+		double res[]   = {0.01, 0.01, 0.01};
 		
-		sdnn = new SDNN(elements, res);
-		final int COUNT = 10;
+		sdnn = new SDNN(elements, res); //SDNNを初期化
+		sdnn.setTarget(2);				//目標値の設定
+		final int COUNT = 100;
 		for(int i=0; i<COUNT; i++){
-			sdnn.input(1.0, 2.0, 3.0);
+			sdnn.input(0.1, 0.2, 0.3);
 		}
 		sdnn.test_dump();
 		

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.lang.Math;
 
 import Control.Elements;
@@ -39,6 +38,7 @@ public class SDNN {
 		middleLayerInit();
 		/*weightの初期化*/
 		weight = new double [middleLayer.length*SUMOUT];
+		Arrays.fill(weight,0.1);
 		h = new double [SUMOUT];
 		/*出力層の初期化を行う*/
 		outputLayerInit();
@@ -233,72 +233,108 @@ public class SDNN {
 	}
 
 	/*学習についてのパラメータの修正を行う*/
-	private final int SUMOUT    = 3;	 //出力値を求めるための出力素子の数ｘ
+	private int SUMOUT    = 3;	 //出力値を求めるための出力素子の数ｘ
 	private final double c 		= 0.3;   //学習係数
-	private int target			= 2;	 //学習での目標値
+	private int target			= 1;	 //学習での目標値
 	public void renewal(int res){
-		int count = 0;		//修正すべき出力素子の個数まで
-		double[] outTmp = new double [outputLayer.length];
-		for(int i=0; i<outTmp.length; i++){
-			outTmp[i] = outputLayer[i];
-		}
+		int[] outIndex = new int [Math.abs(target-res)];
 		/*修正すべき出力素子を順に並べるようにする*/
 		if(res < target){
-			Arrays.sort(outTmp,outTmp.length-1,0);
+			outIndex = findLowerIndex(outIndex,outIndex.length);
 			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
-			for(int i=0; i<outputLayer.length; i++){
-				if(outTmp[i] > 1){
-					continue;
+			for(int i=0; i<outIndex.length; i++){
+				/*重みweightについて修正*/
+				for(int j=0; j<middleLayer.length; j++){
+					weight[outIndex[i]*middleLayer.length+j] += 
+						c*(target-res)*middleLayer[j];
 				}
-				/*修正すべきoutTmpの出力素子を検索*/
-				for(int j=0; j<outputLayer.length; j++){
-					if(outputLayer[j] == outTmp[i]){
-						/*重みweightについて修正*/
-						for(int k=0; k<middleLayer.length; k++){
-							weight[j*middleLayer.length+k] += 
-								c*(Math.abs(res-target))*middleLayer[k];
-						}
-						/*各出力素子のしきい値について修正*/
-						h[j] += -c*Math.abs(res-target);
-						count++;
-					}
-				}
-				if(count >= Math.abs(res-target)){
-					break;
-				}
+				/*各出力素子のしきい値について修正*/
+				h[outIndex[i]] += -c*(target-res);
 			}
-		}else{
-			Arrays.sort(outTmp);
+		}else if(res > target){
+			outIndex = findHigherIndex(outIndex,outIndex.length);
 			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
-			for(int i=0; i<outputLayer.length; i++){
-				if(outTmp[i] < 1){
-					continue;
+			for(int i=0; i<outIndex.length; i++){
+				/*重みweightについて修正*/
+				for(int j=0; j<middleLayer.length; j++){
+					weight[outIndex[i]*middleLayer.length+j] += 
+						c*(target-res)*middleLayer[j];
 				}
-				/*修正すべきoutTmpの出力素子を検索*/
-				for(int j=0; j<outputLayer.length; j++){
-					if(outputLayer[j] == outTmp[i]){
-						/*重みweightについて修正*/
-						for(int k=0; k<middleLayer.length; k++){
-							weight[j*middleLayer.length+k] += 
-								c*(Math.abs(res-target))*middleLayer[k];
-						}
-						/*各出力素子のしきい値について修正*/
-						h[j] += -c*Math.abs(res-target);
-						count++;
-					}
-				}
-				if(count >= Math.abs(res-target)){
-					break;
-				}
+				/*各出力素子のしきい値について修正*/
+				h[outIndex[i]] += -c*(target-res);
 			}
-
 		}
 		
 	}
-	
+	/*修正すべき無発火の出力素子の要素を調べるメソッド*/
+	public int[] findLowerIndex(int out[],int count){
+		int tmp[] = new int [count];
+		double[] outTmp = new double [out.length];
+		for(int i=0; i<outTmp.length; i++){
+			outTmp[i] = out[i];
+		}
+		for(int i=0; i<tmp.length; i++){
+			double max = Double.MIN_VALUE;
+			int index = 0;
+			for(int j=0; j<outTmp.length; j++){
+				if(outTmp[i] > 0){
+					continue;
+				}
+				if(max < outTmp[i]){
+					max = outTmp[i];
+					index = i;
+				}
+			}
+			tmp[i] = index;
+			outTmp[index] = Double.MIN_VALUE;
+		}
+		return tmp;
+	}
+	/*修正すべき発火している出力素子の要素を調べるメソッド(0より大きい)*/
+	public int[] findHigherIndex(int out[],int count){
+		int tmp[] = new int [count];
+		double[] outTmp = new double [out.length];
+		for(int i=0; i<outTmp.length; i++){
+			outTmp[i] = out[i];
+		}
+		for(int i=0; i<tmp.length; i++){
+			double min = Double.MAX_VALUE;
+			int index = 0;
+			for(int j=0; j<outTmp.length; j++){
+				if(outTmp[i] <= 0){
+					continue;
+				}
+				if(min > outTmp[i]){
+					min = outTmp[i];
+					index = i;
+				}
+			}
+			tmp[i] = index;
+			outTmp[index] = Double.MAX_VALUE;
+		}
+		return tmp;
+	}
+	/*目標値設定用のメソッド*/
 	public void setTarget(int t){
 		target = t;
 	}
+	/*出力素子の数を設定するためのメソッド*/
+	public void setSumout(int s){
+		SUMOUT = s;
+	}
+	/*降順ソート用のメソッド*/
+	public void descendingSort(double out[]){
+		for(int i=0; i<out.length; i++){
+			for(int j=1; j<out.length; j++){
+				if(out[i]<out[j]){
+					double tmp = out[i];
+					out[i] = out[j];
+					out[j] = tmp;
+				}
+			}
+		}
+	}
+	
 	/*テスト出力用メソッド*/
 	public void test_dump(){
 		/*入力層の初期化に失敗した時は終了*/
@@ -324,7 +360,7 @@ public class SDNN {
 				System.out.println("");
 			}
 		}
-
+		
 		/*中間層を出力*/
 		System.out.println("中間層を出力");
 		for(int c:middleLayer){
