@@ -212,7 +212,7 @@ public class SDNN {
 		/*各中間素子と結合荷重により出力素子を計算する*/
 		for(int i=0; i<out.length; i++){
 			for(int j=0; j<middleLayer.length; j++){
-				out[i] += x[j] + w[i*middleLayer.length+j];
+				out[i] += x[j] * w[i*middleLayer.length+j];
 			}
 			out[i] -= h[i];  //しきい値分を引く
 		}
@@ -233,14 +233,14 @@ public class SDNN {
 	}
 
 	/*学習についてのパラメータの修正を行う*/
-	private int SUMOUT    = 3;	 //出力値を求めるための出力素子の数ｘ
+	private int SUMOUT          = 3;	 //出力値を求めるための出力素子の数ｘ
 	private final double c 		= 0.3;   //学習係数
 	private int target			= 1;	 //学習での目標値
-	public void renewal(int res){
+	public void renewal(final int res){
 		int[] outIndex = new int [Math.abs(target-res)];
 		/*修正すべき出力素子を順に並べるようにする*/
 		if(res < target){
-			outIndex = findLowerIndex(outIndex,outIndex.length);
+			outIndex = findLowerIndex(outputLayer,target-res);
 			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
 			for(int i=0; i<outIndex.length; i++){
 				/*重みweightについて修正*/
@@ -252,7 +252,7 @@ public class SDNN {
 				h[outIndex[i]] += -c*(target-res);
 			}
 		}else if(res > target){
-			outIndex = findHigherIndex(outIndex,outIndex.length);
+			outIndex = findHigherIndex(outputLayer,res-target);
 			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
 			for(int i=0; i<outIndex.length; i++){
 				/*重みweightについて修正*/
@@ -267,50 +267,42 @@ public class SDNN {
 		
 	}
 	/*修正すべき無発火の出力素子の要素を調べるメソッド*/
-	public int[] findLowerIndex(int out[],int count){
+	public int[] findLowerIndex(final double out[],final int count){
 		int tmp[] = new int [count];
 		double[] outTmp = new double [out.length];
 		for(int i=0; i<outTmp.length; i++){
 			outTmp[i] = out[i];
 		}
-		for(int i=0; i<tmp.length; i++){
-			double max = Double.MIN_VALUE;
-			int index = 0;
-			for(int j=0; j<outTmp.length; j++){
-				if(outTmp[i] > 0){
-					continue;
+		descendingSort(outTmp);
+		for(int i=0; i<outTmp.length; i++){
+			if(outTmp[i] > 0){
+				continue;
+			}else{
+				for(int j=0; j<tmp.length; j++){
+					tmp[j] = i+j;
 				}
-				if(max < outTmp[i]){
-					max = outTmp[i];
-					index = i;
-				}
+				break;
 			}
-			tmp[i] = index;
-			outTmp[index] = Double.MIN_VALUE;
 		}
 		return tmp;
 	}
 	/*修正すべき発火している出力素子の要素を調べるメソッド(0より大きい)*/
-	public int[] findHigherIndex(int out[],int count){
+	public int[] findHigherIndex(final double out[],final int count){
 		int tmp[] = new int [count];
 		double[] outTmp = new double [out.length];
 		for(int i=0; i<outTmp.length; i++){
 			outTmp[i] = out[i];
 		}
-		for(int i=0; i<tmp.length; i++){
-			double min = Double.MAX_VALUE;
-			int index = 0;
-			for(int j=0; j<outTmp.length; j++){
-				if(outTmp[i] <= 0){
-					continue;
+		Arrays.sort(outTmp);
+		for(int i=0; i<outTmp.length; i++){
+			if(outTmp[i] <= 0){
+				continue;
+			}else{
+				for(int j=0; j<tmp.length; j++){
+					tmp[j] = i+j;
 				}
-				if(min > outTmp[i]){
-					min = outTmp[i];
-					index = i;
-				}
+				break;
 			}
-			tmp[i] = index;
-			outTmp[index] = Double.MAX_VALUE;
 		}
 		return tmp;
 	}

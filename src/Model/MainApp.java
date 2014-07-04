@@ -19,7 +19,7 @@ public class MainApp extends JFrame{
 		
 		sdnn = new SDNN(elements, res); //SDNNを初期化
 		sdnn.setTarget(2);				//目標値の設定
-		final int COUNT = 100;
+		final int COUNT = 2;
 		for(int i=0; i<COUNT; i++){
 			sdnn.input(0.1, 0.2, 0.3);
 		}
