@@ -15,9 +15,11 @@ public class SDNN {
 	private Elements shuffledLayer[]     = null; //入力層をシャフルしたもの
 	private int selectedIndex[]          = null; //入力値に対応するのコードパターンを管理
 	private int middleLayer[]            = null; //中間層
+	private int SUMOUT;
 
 	/*入力層、中間層、出力層全体の初期化を行う*/
 	public SDNN(int[] n,double[] res){    //各素子群毎のコードパターンの数
+		SUMOUT = n.length;	//入力値の数だけ出力素子を用意する
 		/*入力層の初期化を行う*/
 		try{
 			inputLayer = new Elements [n.length];
@@ -113,13 +115,12 @@ public class SDNN {
 	public void input(double... input){
 		/*入力値からそれに対応する各層のコードパターンを選択*/
 		selectedIndex = selectedInputIndex(input);
-		List<String> list = new ArrayList<String>();
-		
 		if(selectedIndex == null){
 			return;
 		}
 		/*選択したコードパターンをシャフルした修飾パターンで不感化させる
 		不感化させたコードパターンはmiddleLayerに格納していく*/
+		List<String> list = new ArrayList<String>();
 		for(int i=0; i<inputLayer.length; i++){
 			for(int j=0; j<inputLayer.length; j++){
 				if(i == j){
@@ -146,11 +147,7 @@ public class SDNN {
 		}
 		/*各出力素子の値を計算*/
 		outputLayer = calcOutputLayer(middleLayer,weight);
-		/*各出力素子から出力値を算出*/
-		int result = resultOutput(outputLayer);
-		/*出力結果と目標値を元に学習の更新を行う*/
-		renewal(result);
-
+		resultOutput(outputLayer);
 	}
 
 	/*入力値に対応するコードパターンを各素子群から選ぶ*/
@@ -198,16 +195,15 @@ public class SDNN {
 		if(middleLayer == null){
 			return;
 		}
-
 		outputLayer = new double [SUMOUT];
-		outputLayer = calcOutputLayer(middleLayer,weight);
 	}
 
 	/*出力層を計算する*/
 	private double outputLayer[]        = null; //出力層
 	private double weight[]             = null; //中間素子から出力層への結合荷重
 	private double h[]					= null; //各出力素子のしきい値
-	public double[] calcOutputLayer(int x[],double w[]){
+	private int outputResult;	 //出力値を求めるための出力素子の数
+	protected double[] calcOutputLayer(int x[],double w[]){
 		double out[] = new double [SUMOUT];
 		/*各中間素子と結合荷重により出力素子を計算する*/
 		for(int i=0; i<out.length; i++){
@@ -220,7 +216,7 @@ public class SDNN {
 	}
 
 	/*各出力素子から出力値の合計を求める*/
-	public int resultOutput(double out[]){
+	protected void resultOutput(double out[]){
 		int result = 0;
 		for(int i=0; i<out.length; i++){
 			if(out[i] > 0){
@@ -229,14 +225,13 @@ public class SDNN {
 				//なにもしない
 			}
 		}
-		return result;
+		outputResult = result;
 	}
 
 	/*学習についてのパラメータの修正を行う*/
-	private int SUMOUT          = 3;	 //出力値を求めるための出力素子の数ｘ
 	private final double c 		= 0.3;   //学習係数
-	private int target			= 1;	 //学習での目標値
-	public void renewal(final int res){
+	private double target		= 1;	 //学習での目標値
+	public void learning(final int res){
 		int[] outIndex = new int [Math.abs(target-res)];
 		/*修正すべき出力素子を順に並べるようにする*/
 		if(res < target){
@@ -267,7 +262,7 @@ public class SDNN {
 		
 	}
 	/*修正すべき無発火の出力素子の要素を調べるメソッド*/
-	public int[] findLowerIndex(final double out[],final int count){
+	protected int[] findLowerIndex(final double out[],final int count){
 		int tmp[] = new int [count];
 		double[] outTmp = new double [out.length];
 		for(int i=0; i<outTmp.length; i++){
@@ -287,7 +282,7 @@ public class SDNN {
 		return tmp;
 	}
 	/*修正すべき発火している出力素子の要素を調べるメソッド(0より大きい)*/
-	public int[] findHigherIndex(final double out[],final int count){
+	protected int[] findHigherIndex(final double out[],final int count){
 		int tmp[] = new int [count];
 		double[] outTmp = new double [out.length];
 		for(int i=0; i<outTmp.length; i++){
@@ -307,15 +302,15 @@ public class SDNN {
 		return tmp;
 	}
 	/*目標値設定用のメソッド*/
-	public void setTarget(int t){
+	public void setTarget(double t){
 		target = t;
 	}
-	/*出力素子の数を設定するためのメソッド*/
-	public void setSumout(int s){
-		SUMOUT = s;
+	//SDNNの出力値を返す
+	public int out(){
+		return outputResult;
 	}
 	/*降順ソート用のメソッド*/
-	public void descendingSort(double out[]){
+	protected void descendingSort(double out[]){
 		for(int i=0; i<out.length; i++){
 			for(int j=1; j<out.length; j++){
 				if(out[i]<out[j]){
@@ -359,10 +354,9 @@ public class SDNN {
 			System.out.print(c+" ");
 		}
 		System.out.println("");
-
 		/*最終的な出力値と目標値*/
 		System.out.println("出力値  目標値");
-		System.out.println(resultOutput(outputLayer)+" "+target);
+		System.out.println(outputResult+" "+target);
 		/*重みとしきい値を表示*/
 		System.out.println("重み");
 		for(int i=0; i<outputLayer.length; i++){

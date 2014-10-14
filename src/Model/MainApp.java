@@ -18,10 +18,11 @@ public class MainApp extends JFrame{
 		double res[]   = {0.01, 0.01, 0.01};
 		
 		sdnn = new SDNN(elements, res); //SDNNを初期化
-		sdnn.setTarget(2);				//目標値の設定
 		final int COUNT = 2;
 		for(int i=0; i<COUNT; i++){
-			sdnn.input(0.1, 0.2, 0.3);
+			sdnn.setTarget(2);				//目標値の設定
+			sdnn.input(0.1, 0.2, 0.3);		//input data
+			sdnn.learning(sdnn.out());
 		}
 		sdnn.test_dump();
 		
