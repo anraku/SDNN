@@ -1,6 +1,6 @@
-package Control;
+package sdnn;
 
-import Control.CodePattern;
+import sdnn.CodePattern;
 import java.util.Random;
 
 
@@ -9,21 +9,19 @@ public class Elements {
 	private CodePattern[] elements = null;		//コードパターンを管理する
 	private int length = 0;						//elements.length
 	private double resolution = 1.0;			//分解能
-
-	/**/
 	public Elements(int n,double res){
+		int size = (int)(n/res);
 		try{
-			elements = new CodePattern [n];
-			for(int i=0; i<n; i++){
+			elements = new CodePattern [size];//分解能に合わせてコードパターンを生成
+			for(int i=0; i<size; i++){
 				elements[i] = new CodePattern(CODE);
 			}
 		}catch(NullPointerException e){
 			System.out.println(e.getMessage());
 		}
-		length = n;
+		length = size;
 		resolution = res;
 	}
-
 	public Elements(int n){
 		try{
 			elements = new CodePattern [n];
@@ -35,14 +33,17 @@ public class Elements {
 		}
 		length = n;
 	}
-
 	public boolean createElements(){
+		if(elements == null)
+			System.out.println("elements error");
 		/*入力層の各素子群にランダムなコードパターンを与える
 		 * コードパターンは近い素子群同士相関が得られるように
 		 * 似たようなパターンになるよう工夫する*/
 		final int R = 2;    //コードパターンの変える素子の数
 
 		for(int i=0; i<elements.length; i++){
+			if(elements[i] == null)
+				System.out.println("elements["+i+"] error");
 			if(i == 0){
 				Random rnd = new Random();
 				/*入力層の素子群の１つめのコードパターンをランダムに作成*/

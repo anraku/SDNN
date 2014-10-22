@@ -1,4 +1,4 @@
-package Control;
+package sdnn;
 
 public class CodePattern {
 	
@@ -16,7 +16,7 @@ public class CodePattern {
 	}
 	
 	//コードパターンを別のコードパターンにコピーする          //int配列 ver
-	public void copyCodePattern(int[] cp){
+	public void copyCodePattern(final int[] cp){
 		for(int i=0; i<code_pattern.length; i++){
 			this.code_pattern[i] = cp[i];
 		}

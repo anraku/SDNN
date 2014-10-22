@@ -1,4 +1,4 @@
-package Control;
+package sdnn;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Arrays;
 import java.lang.Math;
 
-import Control.Elements;
-import Control.CodePattern;
+import sdnn.Elements;
+import sdnn.CodePattern;
 
 public class SDNN {
 	
@@ -16,6 +16,8 @@ public class SDNN {
 	private int selectedIndex[]          = null; //入力値に対応するのコードパターンを管理
 	private int middleLayer[]            = null; //中間層
 	private int SUMOUT;
+	private double weight[]             = null; //中間素子から出力層への結合荷重
+	private double h[]					= null; //各出力素子のしきい値
 
 	/*入力層、中間層、出力層全体の初期化を行う*/
 	public SDNN(int[] n,double[] res){    //各素子群毎のコードパターンの数
@@ -48,9 +50,14 @@ public class SDNN {
 	
 	/*入力層の初期化を行う*/
 	public void inputLayerInit(int index,int n){
-		/*入力層にある各素子群のコードパターンを作成する*/
-		inputLayer[index].createElements();		
-		
+		try{
+			if(inputLayer[index] == null)//test
+				System.out.println("inputLayer[index] null");
+			/*入力層にある各素子群のコードパターンを作成する*/
+			inputLayer[index].createElements();		
+		}catch(NullPointerException e){
+			System.out.println("Elements InitializeError");
+		}
 	}
 	
 	/*入力層をシャフルした結果を別の配列に格納する*/
@@ -62,6 +69,7 @@ public class SDNN {
 		try{
 			shuffledLayer = new Elements [inputLayer.length];
 			for(int i=0; i<inputLayer.length; i++){
+				System.out.println(inputLayer[i].getLength());
 				shuffledLayer[i] = new Elements(inputLayer[i].getLength());
 			}
 		}catch(NullPointerException e){
@@ -132,13 +140,16 @@ public class SDNN {
 				/*修飾パターン*/
 				CodePattern modPattern = 
 					shuffledLayer[j].getCodePattern(selectedIndex[i]);
-
-				/*コードパターンを不感化した結果を返す*/
-				CodePattern desPattern = 
-					neuronDesensitise(outputPattern,modPattern);
-
-				/*middleLayerにコードパターンをlistで追加していく。*/
-				list.addAll(middleLayerAdd(desPattern));
+				try{
+					/*コードパターンを不感化した結果を返す*/
+					CodePattern desPattern = 
+						neuronDesensitise(outputPattern,modPattern);
+					/*middleLayerにコードパターンをlistで追加していく。*/
+					list.addAll(middleLayerAdd(desPattern));
+				}catch(NullPointerException e){
+					System.out.println("不感化エラー");
+					return;
+				}
 			}
 		}
 		String tmp[] = list.toArray(new String[list.size()]);
@@ -200,9 +211,7 @@ public class SDNN {
 
 	/*出力層を計算する*/
 	private double outputLayer[]        = null; //出力層
-	private double weight[]             = null; //中間素子から出力層への結合荷重
-	private double h[]					= null; //各出力素子のしきい値
-	private int outputResult;	 //出力値を求めるための出力素子の数
+	private double outputResult;	 //出力値を求めるための出力素子の数
 	protected double[] calcOutputLayer(int x[],double w[]){
 		double out[] = new double [SUMOUT];
 		/*各中間素子と結合荷重により出力素子を計算する*/
@@ -225,38 +234,38 @@ public class SDNN {
 				//なにもしない
 			}
 		}
-		outputResult = result;
+		outputResult = result/10.0;
 	}
 
 	/*学習についてのパラメータの修正を行う*/
 	private final double c 		= 0.3;   //学習係数
-	private double target		= 1;	 //学習での目標値
-	public void learning(final int res){
-		int[] outIndex = new int [Math.abs(target-res)];
+	private double target		= 1.0;	 //学習での目標値
+	public void learning(){
+		int[] outIndex = new int [(int)(Math.abs(target-outputResult))];
 		/*修正すべき出力素子を順に並べるようにする*/
-		if(res < target){
-			outIndex = findLowerIndex(outputLayer,target-res);
+		if(outputResult < target){
+			outIndex = findLowerIndex(outputLayer,(int)(target-outputResult));
 			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
 			for(int i=0; i<outIndex.length; i++){
 				/*重みweightについて修正*/
 				for(int j=0; j<middleLayer.length; j++){
 					weight[outIndex[i]*middleLayer.length+j] += 
-						c*(target-res)*middleLayer[j];
+						c*(target-outputResult)*middleLayer[j];
 				}
 				/*各出力素子のしきい値について修正*/
-				h[outIndex[i]] += -c*(target-res);
+				h[outIndex[i]] += -c*(target-outputResult);
 			}
-		}else if(res > target){
-			outIndex = findHigherIndex(outputLayer,res-target);
+		}else if(outputResult > target){
+			outIndex = findHigherIndex(outputLayer,(int)(outputResult-target));
 			/*|出力値-目標値|の数だけ学習パラメータを調整する*/
 			for(int i=0; i<outIndex.length; i++){
 				/*重みweightについて修正*/
 				for(int j=0; j<middleLayer.length; j++){
 					weight[outIndex[i]*middleLayer.length+j] += 
-						c*(target-res)*middleLayer[j];
+						c*(target-outputResult)*middleLayer[j];
 				}
 				/*各出力素子のしきい値について修正*/
-				h[outIndex[i]] += -c*(target-res);
+				h[outIndex[i]] += -c*(target-outputResult);
 			}
 		}
 		
@@ -306,8 +315,12 @@ public class SDNN {
 		target = t;
 	}
 	//SDNNの出力値を返す
-	public int out(){
+	public double out(){
 		return outputResult;
+	}
+	//現在の重みを返す
+	public double[] getWeight(){
+		return weight;
 	}
 	/*降順ソート用のメソッド*/
 	protected void descendingSort(double out[]){
